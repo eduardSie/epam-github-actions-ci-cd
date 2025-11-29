@@ -23,9 +23,15 @@ jobs:
       
     - name: Verify Deployment
       run: |
+        echo "Listing all pods:"
         kubectl get pods
-        kubectl get services
-        # Wait a moment for pod to start
-        sleep 15
-        kubectl get pods
+        
+        echo "Waiting for the pod to be ready (timeout 60s)..."
+        # This forces the script to wait until the app is actually running
+        kubectl wait --for=condition=ready pod -l app=nodejs-app --timeout=60s
+        
+        echo "Pod description (for debugging):"
+        kubectl describe pods -l app=nodejs-app
+        
+        echo "Service URL:"
         minikube service nodejs-app --url
