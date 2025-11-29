@@ -1,37 +1,32 @@
-name: Deploy to Minikube
+name: Deploy to Minikube using GitHub Actions
 on: [push]
 
 jobs:
   job1:
     runs-on: ubuntu-latest
-    name: Build and Deploy
+    name: build Node.js Docker Image and deploy to minikube
     steps:
     - uses: actions/checkout@v2
     
     - name: Start minikube
       uses: medyagh/setup-minikube@master
+
+    - name: Try the cluster !
+      run: kubectl get pods -A
       
-    - name: Build image inside Minikube environment
+    - name: Build image
       run: |
         export SHELL=/bin/bash
-        # This is the Magic Command:
         eval $(minikube -p minikube docker-env)
         docker build -f ./Dockerfile -t devopshint/node-app:latest .
+        echo -n "verifying images:"
+        docker images
         
     - name: Deploy to Minikube
       run: kubectl apply -f k8s-node-app.yaml
       
     - name: Verify Deployment
       run: |
-        echo "Listing all pods:"
         kubectl get pods
-        
-        echo "Waiting for the pod to be ready (timeout 60s)..."
-        # This forces the script to wait until the app is actually running
-        kubectl wait --for=condition=ready pod -l app=nodejs-app --timeout=60s
-        
-        echo "Pod description (for debugging):"
-        kubectl describe pods -l app=nodejs-app
-        
-        echo "Service URL:"
+        kubectl wait --for=condition=ready pod -l app=nodejs-app --timeout=60s 
         minikube service nodejs-app --url
